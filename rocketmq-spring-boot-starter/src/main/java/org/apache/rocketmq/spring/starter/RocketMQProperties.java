@@ -36,7 +36,7 @@ public class RocketMQProperties {
     public static class Producer {
 
         /**
-         * name of producer
+         * name of defaultMQProducer
          */
         private String group;
 

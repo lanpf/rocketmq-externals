@@ -18,24 +18,26 @@
 package org.apache.rocketmq.spring.starter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.rocketmq.spring.starter.annotation.RocketMQMessageListener;
-import org.apache.rocketmq.spring.starter.core.DefaultRocketMQListenerContainer;
-import org.apache.rocketmq.spring.starter.core.RocketMQListener;
-import org.apache.rocketmq.spring.starter.core.RocketMQTemplate;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
-import javax.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.impl.MQClientAPIImpl;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
+import org.apache.rocketmq.spring.starter.annotation.RocketMQMessageListener;
+import org.apache.rocketmq.spring.starter.constant.DefaultRocketMQTransactionConstants;
+import org.apache.rocketmq.spring.starter.core.DefaultRocketMQListenerContainer;
+import org.apache.rocketmq.spring.starter.core.RocketMQListener;
+import org.apache.rocketmq.spring.starter.core.RocketMQTemplate;
+import org.apache.rocketmq.spring.starter.core.TransactionRocketMQTemplate;
+import org.apache.rocketmq.spring.starter.enums.ConsumeMode;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.BeanDefinitionValidationException;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -47,11 +49,17 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Role;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.util.Assert;
 
-import static org.apache.rocketmq.spring.starter.core.DefaultRocketMQListenerContainerConstants.*;
+import javax.annotation.Resource;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.apache.rocketmq.spring.starter.constant.DefaultRocketMQListenerContainerConstants.*;
 
 @Configuration
 @EnableConfigurationProperties(RocketMQProperties.class)
@@ -61,14 +69,22 @@ import static org.apache.rocketmq.spring.starter.core.DefaultRocketMQListenerCon
 public class RocketMQAutoConfiguration {
 
     @Bean
+    @ConditionalOnClass(ObjectMapper.class)
+    @ConditionalOnMissingBean(name = "rocketMQMessageObjectMapper")
+    public ObjectMapper rocketMQMessageObjectMapper() {
+        return new ObjectMapper();
+    }
+
+    @Bean
     @ConditionalOnClass(DefaultMQProducer.class)
     @ConditionalOnMissingBean(DefaultMQProducer.class)
-    @ConditionalOnProperty(prefix = "spring.rocketmq", value = {"nameServer", "producer.group"})
+    @ConditionalOnProperty(prefix = "spring.rocketmq", value = {"name-server", "producer.group"})
+    @Order(1)
     public DefaultMQProducer mqProducer(RocketMQProperties rocketMQProperties) {
 
         RocketMQProperties.Producer producerConfig = rocketMQProperties.getProducer();
         String groupName = producerConfig.getGroup();
-        Assert.hasText(groupName, "[spring.rocketmq.producer.group] must not be null");
+        Assert.hasText(groupName, "[spring.rocketmq.defaultMQProducer.group] must not be null");
 
         DefaultMQProducer producer = new DefaultMQProducer(producerConfig.getGroup());
         producer.setNamesrvAddr(rocketMQProperties.getNameServer());
@@ -82,22 +98,14 @@ public class RocketMQAutoConfiguration {
         return producer;
     }
 
-    @Bean
-    @ConditionalOnClass(ObjectMapper.class)
-    @ConditionalOnMissingBean(name = "rocketMQMessageObjectMapper")
-    public ObjectMapper rocketMQMessageObjectMapper() {
-        return new ObjectMapper();
-    }
-
     @Bean(destroyMethod = "destroy")
     @ConditionalOnBean(DefaultMQProducer.class)
     @ConditionalOnMissingBean(name = "rocketMQTemplate")
+    @Order(10)
     public RocketMQTemplate rocketMQTemplate(DefaultMQProducer mqProducer,
-        @Autowired(required = false)
-        @Qualifier("rocketMQMessageObjectMapper")
-            ObjectMapper objectMapper) {
+        @Autowired(required = false) @Qualifier("rocketMQMessageObjectMapper") ObjectMapper objectMapper) {
         RocketMQTemplate rocketMQTemplate = new RocketMQTemplate();
-        rocketMQTemplate.setProducer(mqProducer);
+        rocketMQTemplate.setDefaultMQProducer(mqProducer);
         if (Objects.nonNull(objectMapper)) {
             rocketMQTemplate.setObjectMapper(objectMapper);
         }
@@ -105,10 +113,26 @@ public class RocketMQAutoConfiguration {
         return rocketMQTemplate;
     }
 
+
+    @Bean(destroyMethod = "destroy")
+    @ConditionalOnBean(DefaultMQProducer.class)
+    @ConditionalOnMissingBean(name = "transactionRocketMQTemplate")
+    @Order(10)
+    public TransactionRocketMQTemplate transactionRocketMQTemplate(DefaultMQProducer mqProducer,
+        @Autowired(required = false) @Qualifier("rocketMQMessageObjectMapper") ObjectMapper objectMapper) {
+        TransactionRocketMQTemplate transactionRocketMQTemplate = new TransactionRocketMQTemplate();
+        transactionRocketMQTemplate.setDefaultMQProducer(mqProducer);
+        if (Objects.nonNull(objectMapper)) {
+            transactionRocketMQTemplate.setObjectMapper(objectMapper);
+        }
+
+        return transactionRocketMQTemplate;
+    }
+
     @Configuration
     @ConditionalOnClass(DefaultMQPushConsumer.class)
     @EnableConfigurationProperties(RocketMQProperties.class)
-    @ConditionalOnProperty(prefix = "spring.rocketmq", value = "nameServer")
+    @ConditionalOnProperty(prefix = "spring.rocketmq", value = "name-server")
     @Order
     public static class ListenerContainerConfiguration implements ApplicationContextAware, InitializingBean {
         private ConfigurableApplicationContext applicationContext;
@@ -155,10 +179,14 @@ public class RocketMQAutoConfiguration {
 
             RocketMQListener rocketMQListener = (RocketMQListener) bean;
             RocketMQMessageListener annotation = clazz.getAnnotation(RocketMQMessageListener.class);
+
+            if (annotation.consumeMode() == ConsumeMode.ORDERLY && annotation.messageModel() == MessageModel.BROADCASTING) {
+                throw new BeanDefinitionValidationException("Bad annotation definition in @RocketMQMessageListener, messageModel BROADCASTING does not support ORDERLY message!");
+            }
+
             BeanDefinitionBuilder beanBuilder = BeanDefinitionBuilder.rootBeanDefinition(DefaultRocketMQListenerContainer.class);
             beanBuilder.addPropertyValue(PROP_NAMESERVER, rocketMQProperties.getNameServer());
             beanBuilder.addPropertyValue(PROP_TOPIC, environment.resolvePlaceholders(annotation.topic()));
-
             beanBuilder.addPropertyValue(PROP_CONSUMER_GROUP, environment.resolvePlaceholders(annotation.consumerGroup()));
             beanBuilder.addPropertyValue(PROP_CONSUME_MODE, annotation.consumeMode());
             beanBuilder.addPropertyValue(PROP_CONSUME_THREAD_MAX, annotation.consumeThreadMax());
@@ -189,4 +217,21 @@ public class RocketMQAutoConfiguration {
             log.info("register rocketMQ listener to container, listenerBeanName:{}, containerBeanName:{}", beanName, containerBeanName);
         }
     }
+
+    @Bean
+    @ConditionalOnBean(TransactionRocketMQTemplate.class)
+    @ConditionalOnMissingBean(RocketMQTransactionHandlerRegistry.class)
+    @Order(100)
+    public RocketMQTransactionHandlerRegistry transactionHandlerRegistry(TransactionRocketMQTemplate transactionRocketMQTemplate) {
+        return new RocketMQTransactionHandlerRegistry(transactionRocketMQTemplate);
+    }
+
+
+    @Bean(name = DefaultRocketMQTransactionConstants.ROCKETMQ_TRANSACTION_ANNOTATION_PROCESSOR_BEAN_NAME)
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+    @Order(1000)
+    public RocketMQTransactionAnnotationProcessor transactionAnnotationProcessor(RocketMQTransactionHandlerRegistry transactionHandlerRegistry) {
+        return new RocketMQTransactionAnnotationProcessor(transactionHandlerRegistry);
+    }
+
 }
