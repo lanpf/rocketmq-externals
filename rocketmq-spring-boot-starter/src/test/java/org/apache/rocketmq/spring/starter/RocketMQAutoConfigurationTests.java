@@ -63,7 +63,7 @@ public class RocketMQAutoConfigurationTests {
         ObjectMapper objectMapper = this.context.getBean("rocketMQMessageObjectMapper", ObjectMapper.class);
         assertThat(rocketMQTemplate.getObjectMapper()).isEqualTo(objectMapper);
 
-        DefaultMQProducer defaultMQProducer = rocketMQTemplate.getProducer();
+        DefaultMQProducer defaultMQProducer = rocketMQTemplate.getDefaultMQProducer();
 
         assertThat(defaultMQProducer.getNamesrvAddr()).isEqualTo("127.0.0.1:9876");
         assertThat(defaultMQProducer.getProducerGroup()).isEqualTo("my_group");
