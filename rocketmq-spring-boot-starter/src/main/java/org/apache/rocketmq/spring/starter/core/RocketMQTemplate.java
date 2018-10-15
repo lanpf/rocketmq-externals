@@ -498,7 +498,7 @@ public class RocketMQTemplate extends AbstractMessageSendingTemplate<String> imp
         TransactionMQProducer txProducer = new TransactionMQProducer(producerGroup);
         txProducer.setTransactionListener(transactionListener);
 
-        txProducer.setNamesrvAddr(getDefaultMQProducer().getNamesrvAddr());
+        txProducer.setNamesrvAddr(defaultMQProducer.getNamesrvAddr());
         if (executorService != null) {
             txProducer.setExecutorService(executorService);
         }
