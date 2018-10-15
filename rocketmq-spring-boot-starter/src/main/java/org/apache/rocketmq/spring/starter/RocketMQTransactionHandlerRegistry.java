@@ -2,17 +2,17 @@ package org.apache.rocketmq.spring.starter;
 
 import io.netty.util.internal.ConcurrentSet;
 import org.apache.rocketmq.client.exception.MQClientException;
-import org.apache.rocketmq.spring.starter.core.TransactionRocketMQTemplate;
+import org.apache.rocketmq.spring.starter.core.RocketMQTemplate;
 import org.springframework.beans.factory.DisposableBean;
 
 import java.util.Set;
 
 public class RocketMQTransactionHandlerRegistry implements DisposableBean {
 
-    private TransactionRocketMQTemplate transactionRocketMQTemplate;
+    private RocketMQTemplate rocketMQTemplate;
 
-    public RocketMQTransactionHandlerRegistry(TransactionRocketMQTemplate transactionRocketMQTemplate) {
-        this.transactionRocketMQTemplate = transactionRocketMQTemplate;
+    public RocketMQTransactionHandlerRegistry(RocketMQTemplate transactionRocketMQTemplate) {
+        this.rocketMQTemplate = transactionRocketMQTemplate;
     }
 
     private final Set<String> listenerContainer = new ConcurrentSet<>();
@@ -28,6 +28,6 @@ public class RocketMQTransactionHandlerRegistry implements DisposableBean {
         }
         listenerContainer.add(handler.getProducerGroup());
 
-        transactionRocketMQTemplate.put(handler.getProducerGroup(), handler.getTransactionListener(), handler.getExecutorService());
+        rocketMQTemplate.put(handler.getProducerGroup(), handler.getTransactionListener(), handler.getExecutorService());
     }
 }

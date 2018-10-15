@@ -29,7 +29,6 @@ import org.apache.rocketmq.spring.starter.constant.RocketMQTransactionConst;
 import org.apache.rocketmq.spring.starter.core.DefaultRocketMQListenerContainer;
 import org.apache.rocketmq.spring.starter.core.RocketMQListener;
 import org.apache.rocketmq.spring.starter.core.RocketMQTemplate;
-import org.apache.rocketmq.spring.starter.core.TransactionRocketMQTemplate;
 import org.apache.rocketmq.spring.starter.enums.ConsumeMode;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
@@ -98,7 +97,7 @@ public class RocketMQAutoConfiguration {
     @Bean(destroyMethod = "destroy")
     @ConditionalOnBean(DefaultMQProducer.class)
     @ConditionalOnMissingBean(name = "rocketMQTemplate")
-    @Order(10)
+    @Order(2)
     public RocketMQTemplate rocketMQTemplate(DefaultMQProducer mqProducer,
         @Autowired(required = false) @Qualifier("rocketMQMessageObjectMapper") ObjectMapper objectMapper) {
         RocketMQTemplate rocketMQTemplate = new RocketMQTemplate();
@@ -110,21 +109,6 @@ public class RocketMQAutoConfiguration {
         return rocketMQTemplate;
     }
 
-
-    @Bean(destroyMethod = "destroy")
-    @ConditionalOnBean(DefaultMQProducer.class)
-    @ConditionalOnMissingBean(name = "transactionRocketMQTemplate")
-    @Order(10)
-    public TransactionRocketMQTemplate transactionRocketMQTemplate(DefaultMQProducer mqProducer,
-        @Autowired(required = false) @Qualifier("rocketMQMessageObjectMapper") ObjectMapper objectMapper) {
-        TransactionRocketMQTemplate transactionRocketMQTemplate = new TransactionRocketMQTemplate();
-        transactionRocketMQTemplate.setDefaultMQProducer(mqProducer);
-        if (Objects.nonNull(objectMapper)) {
-            transactionRocketMQTemplate.setObjectMapper(objectMapper);
-        }
-
-        return transactionRocketMQTemplate;
-    }
 
     @Configuration
     @ConditionalOnClass(DefaultMQPushConsumer.class)
@@ -213,17 +197,17 @@ public class RocketMQAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnBean(TransactionRocketMQTemplate.class)
+    @ConditionalOnBean(RocketMQTemplate.class)
     @ConditionalOnMissingBean(RocketMQTransactionHandlerRegistry.class)
-    @Order(100)
-    public RocketMQTransactionHandlerRegistry transactionHandlerRegistry(TransactionRocketMQTemplate transactionRocketMQTemplate) {
-        return new RocketMQTransactionHandlerRegistry(transactionRocketMQTemplate);
+    @Order(3)
+    public RocketMQTransactionHandlerRegistry transactionHandlerRegistry(RocketMQTemplate rocketMQTemplate) {
+        return new RocketMQTransactionHandlerRegistry(rocketMQTemplate);
     }
 
 
     @Bean(name = RocketMQTransactionConst.ROCKETMQ_TRANSACTION_ANNOTATION_PROCESSOR_BEAN_NAME)
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-    @Order(1000)
+    @Order
     public RocketMQTransactionAnnotationProcessor transactionAnnotationProcessor(RocketMQTransactionHandlerRegistry transactionHandlerRegistry) {
         return new RocketMQTransactionAnnotationProcessor(transactionHandlerRegistry);
     }

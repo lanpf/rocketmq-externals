@@ -6,6 +6,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * See Guava ThreadFactoryBuilder
+ *
  * @author lanpengfei
  * @date 2018/10/16
  */

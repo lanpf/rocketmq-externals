@@ -21,6 +21,7 @@ import org.apache.rocketmq.spring.starter.constant.RocketMQTransactionConst;
 import org.springframework.stereotype.Component;
 
 import java.lang.annotation.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This annotation is used over a class which implements interface
@@ -45,27 +46,32 @@ public @interface RocketMQTransactionListener {
     String txProducerGroup() default RocketMQTransactionConst.ROCKETMQ_TRANSACTION_GROUP;
 
     /**
-     * Set ExecutorService params -- corePoolSize
+     * See ThreadPoolExecutor corePoolSize
      */
     int corePoolSize() default 1;
 
     /**
-     * Set ExecutorService params -- maximumPoolSize
+     * See ThreadPoolExecutor maximumPoolSize
      */
-    int maxPoolSize() default 1;
+    int maximumPoolSize() default 1;
 
     /**
-     * Set ExecutorService params -- keepAliveTime
+     * See ThreadPoolExecutor keepAliveTime, hold 60s
      */
-    long keepAliveTime() default 1000 * 60; //60ms
+    long keepAliveTime() default 1000 * 60;
 
     /**
-     * Set ExecutorService params -- blockingQueueSize
+     * See ThreadPoolExecutor timeUnit
+     */
+    TimeUnit timeUnit() default TimeUnit.MILLISECONDS;
+
+    /**
+     * See ThreadPoolExecutor new LinkedBlockingDeque<>(blockingQueueSize)
      */
     int blockingQueueSize() default 2000;
 
     /**
-     * Set ExecutorService params -- blockingQueueSize
+     * See ThreadPoolExecutor namedFactory
      */
     String poolNameFormat() default RocketMQTransactionConst.ROCKETMQ_TRANSACTION_POOL_NAME_FORMAT;
 }

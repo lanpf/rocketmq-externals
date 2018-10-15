@@ -59,8 +59,8 @@ public class RocketMQTransactionAnnotationProcessor implements BeanPostProcessor
             throw new MQClientException("Bad usage of @RocketMQTransactionListener, the class must implements interface org.apache.rocketmq.client.producer.TransactionListener", null);
         }
 
-        ThreadPoolExecutor executorService = new ThreadPoolExecutor(annotation.corePoolSize(), annotation.maxPoolSize(),
-                annotation.keepAliveTime(), TimeUnit.MILLISECONDS, new LinkedBlockingDeque<>(annotation.blockingQueueSize()), (new ThreadFactoryBuilder()).setNameFormat(annotation.poolNameFormat()).build());
+        ThreadPoolExecutor executorService = new ThreadPoolExecutor(annotation.corePoolSize(), annotation.maximumPoolSize(),
+                annotation.keepAliveTime(), annotation.timeUnit(), new LinkedBlockingDeque<>(annotation.blockingQueueSize()), (new ThreadFactoryBuilder()).setNameFormat(annotation.poolNameFormat()).build());
 
         RocketMQTransactionHandler transactionHandler = RocketMQTransactionHandler.builder()
                 .producerGroup(annotation.txProducerGroup())
