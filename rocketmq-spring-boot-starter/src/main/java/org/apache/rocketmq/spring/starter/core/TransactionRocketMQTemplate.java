@@ -64,14 +64,14 @@ public class TransactionRocketMQTemplate extends RocketMQTemplate {
 
     public void put(String producerGroup, TransactionListener transactionListener, ExecutorService executorService) throws MQClientException {
         if (!txProducerCache.containsKey(producerGroup)) {
-            TransactionMQProducer txProducer = initMQProducer(producerGroup, transactionListener, executorService);
+            TransactionMQProducer txProducer = initTransactionMQProducer(producerGroup, transactionListener, executorService);
             txProducer.start();
             txProducerCache.put(producerGroup, txProducer);
         }
 
     }
 
-    private TransactionMQProducer initMQProducer(String producerGroup, TransactionListener transactionListener, ExecutorService executorService) {
+    private TransactionMQProducer initTransactionMQProducer(String producerGroup, TransactionListener transactionListener, ExecutorService executorService) {
         DefaultMQProducer defaultMQProducer = getDefaultMQProducer();
         Assert.notNull(defaultMQProducer, "Property 'defaultMQProducer' is required");
         Assert.notNull(transactionListener, "Parameter 'transactionListener' is required");

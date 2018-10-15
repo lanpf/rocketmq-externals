@@ -4,10 +4,7 @@ import io.netty.util.internal.ConcurrentSet;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.spring.starter.core.TransactionRocketMQTemplate;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Set;
 
 public class RocketMQTransactionHandlerRegistry implements DisposableBean {

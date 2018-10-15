@@ -2,7 +2,7 @@ package org.apache.rocketmq.spring.starter.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.rocketmq.common.message.MessageConst;
-import org.apache.rocketmq.spring.starter.core.RocketMQMessageConst;
+import org.apache.rocketmq.spring.starter.constant.RocketMQMessageConst;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.util.StringUtils;

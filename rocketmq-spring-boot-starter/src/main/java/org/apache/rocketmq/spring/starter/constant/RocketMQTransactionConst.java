@@ -18,13 +18,15 @@ package org.apache.rocketmq.spring.starter.constant;
  */
 
 
-public class DefaultRocketMQTransactionConstants {
-  /**
-   * The bean name of the internally managed RocketMQ transaction annotation processor.
-   */
-  public static final String ROCKETMQ_TRANSACTION_ANNOTATION_PROCESSOR_BEAN_NAME =
-      "org.springframework.rocketmq.spring.starter.internalRocketMQTransactionAnnotationProcessor";
+public class RocketMQTransactionConst {
+    /**
+     * The bean name of the internally managed RocketMQ transaction annotation processor.
+     */
+    public static final String ROCKETMQ_TRANSACTION_ANNOTATION_PROCESSOR_BEAN_NAME =
+            "org.springframework.rocketmq.spring.starter.internalRocketMQTransactionAnnotationProcessor";
 
-  public static final String ROCKETMQ_TRANSACTION_GROUP =
-      "rocketmq_transaction_group";
+    public static final String ROCKETMQ_TRANSACTION_GROUP =
+            "rocketmq_transaction_group";
+
+    public static final String ROCKETMQ_TRANSACTION_POOL_NAME_FORMAT = "rocketmq-transaction-pool-%d";
 }

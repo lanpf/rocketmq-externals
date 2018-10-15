@@ -4,16 +4,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.TransactionListener;
 import org.apache.rocketmq.spring.starter.annotation.RocketMQTransactionListener;
+import org.apache.rocketmq.spring.starter.util.ThreadFactoryBuilder;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.BeanFactoryAware;
-import org.springframework.beans.factory.config.BeanExpressionResolver;
 import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.context.expression.StandardBeanExpressionResolver;
-import org.springframework.core.annotation.AnnotationUtils;
 
 import java.util.Collections;
 import java.util.Set;
@@ -24,17 +19,13 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class RocketMQTransactionAnnotationProcessor implements BeanPostProcessor {
-
-    private final Set<Class<?>> annotationClasses =
-            Collections.newSetFromMap(new ConcurrentHashMap<>(64));
+    private final Set<Class<?>> annotationCache = Collections.newSetFromMap(new ConcurrentHashMap<>(64));
 
     private RocketMQTransactionHandlerRegistry transactionHandlerRegistry;
 
     public RocketMQTransactionAnnotationProcessor(RocketMQTransactionHandlerRegistry transactionHandlerRegistry) {
         this.transactionHandlerRegistry = transactionHandlerRegistry;
     }
-
-
 
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
@@ -43,20 +34,17 @@ public class RocketMQTransactionAnnotationProcessor implements BeanPostProcessor
 
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-        if (!annotationClasses.contains(bean.getClass())) {
-            Class<?> targetClass = AopUtils.getTargetClass(bean);
-            RocketMQTransactionListener transactionListener = AnnotationUtils.findAnnotation(targetClass, RocketMQTransactionListener.class);
+        if (!annotationCache.contains(bean.getClass())) {
+            Class<?> clazz = AopUtils.getTargetClass(bean);
+            RocketMQTransactionListener annotation = clazz.getAnnotation(RocketMQTransactionListener.class);
 
-            annotationClasses.add(bean.getClass());
-            if (transactionListener == null) {
-                log.trace("No @RocketMQTransactionListener annotations found on bean type: {}", bean.getClass());
-            } else {
-                try {
-                    processTransactionListenerAnnotation(transactionListener, bean);
-                } catch (MQClientException e) {
-                    log.error("failed to process annotation " + transactionListener, e);
-                    throw new BeanCreationException("failed to process annotation " + transactionListener, e);
-                }
+            annotationCache.add(bean.getClass());
+
+            try {
+                processTransactionListenerAnnotation(annotation, bean);
+            } catch (MQClientException e) {
+                log.error("failed to process annotation " + annotation, e);
+                throw new BeanCreationException("failed to process annotation " + annotation, e);
             }
         }
 
@@ -70,11 +58,14 @@ public class RocketMQTransactionAnnotationProcessor implements BeanPostProcessor
         if (!TransactionListener.class.isAssignableFrom(bean.getClass())) {
             throw new MQClientException("Bad usage of @RocketMQTransactionListener, the class must implements interface org.apache.rocketmq.client.producer.TransactionListener", null);
         }
+
+        ThreadPoolExecutor executorService = new ThreadPoolExecutor(annotation.corePoolSize(), annotation.maxPoolSize(),
+                annotation.keepAliveTime(), TimeUnit.MILLISECONDS, new LinkedBlockingDeque<>(annotation.blockingQueueSize()), (new ThreadFactoryBuilder()).setNameFormat(annotation.poolNameFormat()).build());
+
         RocketMQTransactionHandler transactionHandler = RocketMQTransactionHandler.builder()
                 .producerGroup(annotation.txProducerGroup())
                 .transactionListener((TransactionListener) bean)
-                .executorService(new ThreadPoolExecutor(annotation.corePoolSize(), annotation.maxPoolSize(),
-                        annotation.keepAliveTime(), TimeUnit.MILLISECONDS, new LinkedBlockingDeque<>(annotation.blockingQueueSize())))
+                .executorService(executorService)
                 .build();
 
         transactionHandlerRegistry.register(transactionHandler);

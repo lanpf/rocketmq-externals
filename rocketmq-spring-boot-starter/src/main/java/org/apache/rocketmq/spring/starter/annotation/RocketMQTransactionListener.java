@@ -17,7 +17,7 @@
 
 package org.apache.rocketmq.spring.starter.annotation;
 
-import org.apache.rocketmq.spring.starter.constant.DefaultRocketMQTransactionConstants;
+import org.apache.rocketmq.spring.starter.constant.RocketMQTransactionConst;
 import org.springframework.stereotype.Component;
 
 import java.lang.annotation.*;
@@ -29,7 +29,6 @@ import java.lang.annotation.*;
  *
  * <p>Note: The annotation is used only on RocketMQ client producer side, it can not be used
  * on consumer side.
- *
  */
 @Target({ElementType.TYPE, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
@@ -38,27 +37,35 @@ import java.lang.annotation.*;
 public @interface RocketMQTransactionListener {
 
     /**
-     *  Declare the txProducerGroup that is used to relate callback event to the listener, rocketMQTemplate must send a
-     *  transactional message with the declared txProducerGroup.
+     * Declare the transactionProducerGroup that is used to relate callback event to the listener, rocketMQTemplate must send a
+     * transactional message with the declared transactionProducerGroup.
      *
-     *  <p>It is suggested to use the default txProducerGroup if your system only needs to define a TransactionListener class.
+     * <p>It is suggested to use the default transactionProducerGroup if your system only needs to define a TransactionListener class.
      */
-    String txProducerGroup() default DefaultRocketMQTransactionConstants.ROCKETMQ_TRANSACTION_GROUP;
+    String txProducerGroup() default RocketMQTransactionConst.ROCKETMQ_TRANSACTION_GROUP;
 
     /**
      * Set ExecutorService params -- corePoolSize
      */
     int corePoolSize() default 1;
+
     /**
      * Set ExecutorService params -- maximumPoolSize
      */
     int maxPoolSize() default 1;
+
     /**
      * Set ExecutorService params -- keepAliveTime
      */
-    long keepAliveTime() default 1000*60; //60ms
+    long keepAliveTime() default 1000 * 60; //60ms
+
     /**
      * Set ExecutorService params -- blockingQueueSize
      */
     int blockingQueueSize() default 2000;
+
+    /**
+     * Set ExecutorService params -- blockingQueueSize
+     */
+    String poolNameFormat() default RocketMQTransactionConst.ROCKETMQ_TRANSACTION_POOL_NAME_FORMAT;
 }

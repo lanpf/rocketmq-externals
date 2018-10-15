@@ -1,4 +1,4 @@
-package org.apache.rocketmq.spring.starter.core;
+package org.apache.rocketmq.spring.starter.constant;
 
 /**
  * @author lanpengfei
