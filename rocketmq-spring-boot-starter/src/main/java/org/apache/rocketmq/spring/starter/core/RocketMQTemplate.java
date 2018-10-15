@@ -26,6 +26,7 @@ import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.*;
 import org.apache.rocketmq.client.producer.selector.SelectMessageQueueByHash;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
+import org.apache.rocketmq.spring.starter.constant.RocketMQTransactionConst;
 import org.apache.rocketmq.spring.starter.util.RocketMQMessageUtil;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
@@ -449,7 +450,9 @@ public class RocketMQTemplate extends AbstractMessageSendingTemplate<String> imp
     private final Map<String, TransactionMQProducer> txProducerCache = new ConcurrentHashMap<>();
 
     private TransactionMQProducer stageMQProducer(String producerGroup) throws MQClientException {
-
+        if (producerGroup == null) {
+            producerGroup = RocketMQTransactionConst.ROCKETMQ_TRANSACTION_GROUP;
+        }
         TransactionMQProducer cachedProducer = txProducerCache.get(producerGroup);
         if (cachedProducer == null) {
             throw new MQClientException(String.format("Can not found MQProducer '%s' in cache! please define @RocketMQTransactionListener class or invoke createOrGetStartedTransactionMQProducer() to create it firstly", producerGroup), null);
@@ -457,22 +460,34 @@ public class RocketMQTemplate extends AbstractMessageSendingTemplate<String> imp
         return cachedProducer;
     }
 
-    public TransactionSendResult sendMessageInTransaction(final String txProducerGroup, final org.apache.rocketmq.common.message.Message rocketMsg, final Object arg) throws MQClientException {
+    public TransactionSendResult sendMessageInTransaction(String txProducerGroup, final org.apache.rocketmq.common.message.Message rocketMsg, final Object arg) throws MQClientException {
         TransactionMQProducer txProducer = this.stageMQProducer(txProducerGroup);
         return txProducer.sendMessageInTransaction(rocketMsg, arg);
     }
 
-    public TransactionSendResult sendMessageInTransaction(final String txProducerGroup, final String destination, final Message<?> message, final Object arg) throws MQClientException {
+    public TransactionSendResult sendMessageInTransaction(String txProducerGroup, String destination, final Message<?> message, final Object arg) throws MQClientException {
         TransactionMQProducer txProducer = this.stageMQProducer(txProducerGroup);
         org.apache.rocketmq.common.message.Message rocketMsg = RocketMQMessageUtil.convertToRocketMsg(destination, message, getObjectMapper(), getCharset());
         return txProducer.sendMessageInTransaction(rocketMsg, arg);
     }
 
-    public TransactionSendResult sendMessageInTransaction(final String txProducerGroup, final String destination, final Object payload, final Object arg) throws MQClientException {
+    public TransactionSendResult sendMessageInTransaction(String txProducerGroup, String destination, final Object payload, final Object arg) throws MQClientException {
         return sendMessageInTransaction(txProducerGroup, destination, this.doConvert(payload, null, null), arg);
     }
 
-    public void remove(String producerGroup) {
+    public TransactionSendResult sendMessageInTransaction(final org.apache.rocketmq.common.message.Message rocketMsg, final Object arg) throws MQClientException {
+        return sendMessageInTransaction(null, rocketMsg, arg);
+    }
+
+    public TransactionSendResult sendMessageInTransaction(String destination, final Message<?> message, final Object arg) throws MQClientException {
+        return sendMessageInTransaction(null, destination, message, arg);
+    }
+
+    public TransactionSendResult sendMessageInTransaction(String destination, final Object payload, final Object arg) throws MQClientException {
+        return sendMessageInTransaction(null, destination, payload, arg);
+    }
+
+    public void shutdownTransactionMQProducer(String producerGroup) {
         if (txProducerCache.containsKey(producerGroup)) {
             DefaultMQProducer cachedProducer = txProducerCache.get(producerGroup);
             cachedProducer.shutdown();
@@ -480,7 +495,7 @@ public class RocketMQTemplate extends AbstractMessageSendingTemplate<String> imp
         }
     }
 
-    public void put(String producerGroup, TransactionListener transactionListener, ExecutorService executorService) throws MQClientException {
+    public void startTransactionMQProducer(String producerGroup, TransactionListener transactionListener, ExecutorService executorService) throws MQClientException {
         if (!txProducerCache.containsKey(producerGroup)) {
             TransactionMQProducer txProducer = initTransactionMQProducer(producerGroup, transactionListener, executorService);
             txProducer.start();

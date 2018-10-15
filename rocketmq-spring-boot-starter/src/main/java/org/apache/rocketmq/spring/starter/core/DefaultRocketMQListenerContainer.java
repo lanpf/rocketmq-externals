@@ -88,7 +88,7 @@ public class DefaultRocketMQListenerContainer implements InitializingBean, Rocke
      * See class ConsumeConcurrentlyContext
      *
      * Message consume retry strategy<br>
-     * -1,no retry,put into DLQ directly<br>
+     * -1,no retry,startTransactionMQProducer into DLQ directly<br>
      * 0,broker control retry frequency<br>
      * >0,client control retry frequency
      */
