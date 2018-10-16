@@ -1,4 +1,4 @@
-package org.apache.rocketmq.spring.starter;
+package org.apache.rocketmq.spring.starter.transaction;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.exception.MQClientException;
@@ -9,17 +9,17 @@ import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.core.annotation.AnnotationUtils;
 
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class RocketMQTransactionAnnotationProcessor implements BeanPostProcessor {
-    private final Set<Class<?>> annotationCache = Collections.newSetFromMap(new ConcurrentHashMap<>(64));
+    private final Set<Class<?>> filter = Collections.newSetFromMap(new ConcurrentHashMap<>(64));
 
     private RocketMQTransactionHandlerRegistry transactionHandlerRegistry;
 
@@ -34,17 +34,17 @@ public class RocketMQTransactionAnnotationProcessor implements BeanPostProcessor
 
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-        if (!annotationCache.contains(bean.getClass())) {
-            Class<?> clazz = AopUtils.getTargetClass(bean);
-            RocketMQTransactionListener annotation = clazz.getAnnotation(RocketMQTransactionListener.class);
-
-            annotationCache.add(bean.getClass());
-
-            try {
-                processTransactionListenerAnnotation(annotation, bean);
-            } catch (MQClientException e) {
-                log.error("failed to process annotation " + annotation, e);
-                throw new BeanCreationException("failed to process annotation " + annotation, e);
+        if (!filter.contains(bean.getClass())) {
+            filter.add(bean.getClass());
+            Class<?> targetClass = AopUtils.getTargetClass(bean);
+            RocketMQTransactionListener annotation = AnnotationUtils.getAnnotation(targetClass, RocketMQTransactionListener.class);
+            if (annotation != null) {
+                try {
+                    processTransactionListenerAnnotation(annotation, bean);
+                } catch (MQClientException e) {
+                    log.error("failed to process annotation " + annotation, e);
+                    throw new BeanCreationException("failed to process annotation " + annotation, e);
+                }
             }
         }
 

@@ -1,4 +1,4 @@
-package org.apache.rocketmq.spring.starter;
+package org.apache.rocketmq.spring.starter.transaction;
 
 import lombok.Builder;
 import lombok.Data;

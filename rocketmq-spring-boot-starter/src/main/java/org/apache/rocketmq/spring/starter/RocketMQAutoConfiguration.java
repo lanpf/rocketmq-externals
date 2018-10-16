@@ -30,6 +30,8 @@ import org.apache.rocketmq.spring.starter.core.DefaultRocketMQListenerContainer;
 import org.apache.rocketmq.spring.starter.core.RocketMQListener;
 import org.apache.rocketmq.spring.starter.core.RocketMQTemplate;
 import org.apache.rocketmq.spring.starter.enums.ConsumeMode;
+import org.apache.rocketmq.spring.starter.transaction.RocketMQTransactionAnnotationProcessor;
+import org.apache.rocketmq.spring.starter.transaction.RocketMQTransactionHandlerRegistry;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;

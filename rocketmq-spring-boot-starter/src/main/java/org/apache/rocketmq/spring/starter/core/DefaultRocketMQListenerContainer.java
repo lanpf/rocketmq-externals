@@ -109,7 +109,7 @@ public class DefaultRocketMQListenerContainer implements InitializingBean, Rocke
 
     private DefaultMQPushConsumer consumer;
 
-    private Class messageClazz;
+    private Class messageType;
 
     private boolean started;
 
@@ -134,7 +134,7 @@ public class DefaultRocketMQListenerContainer implements InitializingBean, Rocke
             consumer.start();
             started = true;
 
-            log.debug("msgType: {}", messageClazz.getName());
+            log.debug("msgType: {}", messageType.getName());
             log.info("start container: {}", this);
         }
     }
@@ -192,26 +192,26 @@ public class DefaultRocketMQListenerContainer implements InitializingBean, Rocke
 
     @SuppressWarnings("unchecked")
     private Object doConvertMessage(MessageExt messageExt) {
-        if (Objects.equals(messageClazz, MessageExt.class)) {
+        if (Objects.equals(messageType, MessageExt.class)) {
             return messageExt;
         } else {
             String message = new String(messageExt.getBody(), Charset.forName(charset));
-            if (Objects.equals(messageClazz, String.class)) {
+            if (Objects.equals(messageType, String.class)) {
                 return message;
             } else {
                 // if msgType not string, use objectMapper change it.
                 try {
-                    return objectMapper.readValue(message, messageClazz);
+                    return objectMapper.readValue(message, messageType);
                 } catch (Exception e) {
-                    log.error("convert failed. message: {}, messageClazz: {}", message, messageClazz);
-                    throw new RuntimeException("cannot convert message to " + messageClazz, e);
+                    log.error("convert failed. message: {}, messageType: {}", message, messageType);
+                    throw new RuntimeException("cannot convert message to " + messageType, e);
                 }
             }
         }
     }
 
     private void initMessageType() {
-        messageClazz =  Object.class;
+        messageType =  Object.class;
         Type[] interfaces = rocketMQListener.getClass().getGenericInterfaces();
         if (interfaces == null) {
             return;
@@ -223,7 +223,7 @@ public class DefaultRocketMQListenerContainer implements InitializingBean, Rocke
                         && Objects.nonNull(parameterizedType.getActualTypeArguments())
                         && parameterizedType.getActualTypeArguments().length > 0
                 ) {
-                    messageClazz = (Class) parameterizedType.getActualTypeArguments()[0];
+                    messageType = (Class) parameterizedType.getActualTypeArguments()[0];
                     return;
                 }
             }
