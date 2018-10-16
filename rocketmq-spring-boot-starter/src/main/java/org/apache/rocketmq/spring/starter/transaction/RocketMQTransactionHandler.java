@@ -17,5 +17,5 @@ public class RocketMQTransactionHandler {
 
     private TransactionListener transactionListener;
 
-    private ThreadPoolExecutor executorService;
+    private ThreadPoolExecutor checkExecutor;
 }
