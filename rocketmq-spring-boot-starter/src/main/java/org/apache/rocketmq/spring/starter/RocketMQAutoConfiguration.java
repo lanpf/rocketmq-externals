@@ -208,6 +208,7 @@ public class RocketMQAutoConfiguration {
 
 
     @Bean(name = RocketMQTransactionConst.ROCKETMQ_TRANSACTION_ANNOTATION_PROCESSOR_BEAN_NAME)
+    @ConditionalOnBean({RocketMQTransactionHandlerRegistry.class})
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @Order
     public RocketMQTransactionAnnotationProcessor transactionAnnotationProcessor(RocketMQTransactionHandlerRegistry transactionHandlerRegistry) {
