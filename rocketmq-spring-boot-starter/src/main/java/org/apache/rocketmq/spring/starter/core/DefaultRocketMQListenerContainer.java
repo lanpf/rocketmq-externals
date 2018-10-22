@@ -31,6 +31,7 @@ import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.spring.starter.enums.ConsumeMode;
 import org.apache.rocketmq.spring.starter.enums.SelectorType;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
@@ -212,7 +213,7 @@ public class DefaultRocketMQListenerContainer implements InitializingBean, Rocke
 
     private void initMessageType() {
         messageType =  Object.class;
-        Type[] interfaces = rocketMQListener.getClass().getGenericInterfaces();
+        Type[] interfaces = AopUtils.getTargetClass(rocketMQListener).getGenericInterfaces();
         if (interfaces == null) {
             return;
         }

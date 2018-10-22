@@ -22,9 +22,7 @@
 
     <groupId>org.apache.rocketmq</groupId>
     <artifactId>spring-boot-starter-rocketmq</artifactId>
-    <!--0.2.0 support springboot2, 0.1.0 support springboot1-->
-    <version>0.2.0-SNAPSHOT</version>
-    <!--<version>0.1.0-SNAPSHOT</version>-->
+    <version>1.0.0-SNAPSHOT</version>
 
     <name>Spring Boot Rocket Starter</name>
     <description>Starter for messaging using Apache RocketMQ</description>
@@ -45,6 +43,7 @@
     </licenses>
 
     <properties>
+        <!--support springboot1 & 2-->
         <spring.boot.version>2.0.5.RELEASE</spring.boot.version>
         <!--<spring.boot.version>1.5.9.RELEASE</spring.boot.version>-->
         <rocketmq-version>4.3.1</rocketmq-version> <!-- lowest version transaction message works -->
@@ -111,4 +110,16 @@
         </dependencies>
     </dependencyManagement>
 
+    <distributionManagement>
+        <!-- repository -->
+        <repository>
+            <id>nexus-3rdParty</id>
+            <url>http://192.168.1.142:8081/repository/3rdParty/</url>
+        </repository>
+        <!-- snapshot repository -->
+        <snapshotRepository>
+            <id>nexus-3rdPartySnapshot</id>
+            <url>http://192.168.1.142:8081/repository/3rdPartySnapshot/</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>
