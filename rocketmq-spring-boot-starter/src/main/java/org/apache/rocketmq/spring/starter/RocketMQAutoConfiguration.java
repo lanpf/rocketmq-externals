@@ -67,12 +67,8 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public class RocketMQAutoConfiguration {
 
-    @Bean
-    @ConditionalOnClass(ObjectMapper.class)
-    @ConditionalOnMissingBean(name = "rocketMQMessageObjectMapper")
-    public ObjectMapper rocketMQMessageObjectMapper() {
-        return new ObjectMapper();
-    }
+    @Autowired(required = false)
+    private ObjectMapper objectMapper;
 
     @Bean
     @ConditionalOnClass(DefaultMQProducer.class)
@@ -100,8 +96,7 @@ public class RocketMQAutoConfiguration {
     @ConditionalOnBean(DefaultMQProducer.class)
     @ConditionalOnMissingBean(name = "rocketMQTemplate")
     @Order(2)
-    public RocketMQTemplate rocketMQTemplate(DefaultMQProducer mqProducer,
-        @Autowired(required = false) @Qualifier("rocketMQMessageObjectMapper") ObjectMapper objectMapper) {
+    public RocketMQTemplate rocketMQTemplate(DefaultMQProducer mqProducer) {
         RocketMQTemplate rocketMQTemplate = new RocketMQTemplate();
         rocketMQTemplate.setDefaultMQProducer(mqProducer);
         if (Objects.nonNull(objectMapper)) {
@@ -134,8 +129,7 @@ public class RocketMQAutoConfiguration {
         }
 
         @Autowired(required = false)
-        public ListenerContainerConfiguration(
-            @Qualifier("rocketMQMessageObjectMapper") ObjectMapper objectMapper) {
+        public ListenerContainerConfiguration(ObjectMapper objectMapper) {
             this.objectMapper = objectMapper;
         }
 
