@@ -34,12 +34,14 @@ public @interface RocketMQMessageListener {
 
     /**
      * Consumers of the same role is required to have exactly same subscriptions and consumerGroup to correctly achieve
-     * load balance. It's required and needs to be globally unique.
+     * load balance. It's needs to be globally unique.
+     *
+     * It will be generate automatically when sets to empty. Same topic and tags generate the same consumerGroup.
      * </p>
      * <p>
      * See <a href="http://rocketmq.apache.org/docs/core-concept/">here</a> for further discussion.
      */
-    String consumerGroup();
+    String consumerGroup() default "";
 
     /**
      * Topic name

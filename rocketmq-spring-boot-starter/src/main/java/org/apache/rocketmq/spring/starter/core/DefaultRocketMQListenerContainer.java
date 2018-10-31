@@ -1,5 +1,5 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
+ * Licensed to the Apache Software Foundation (ASF) under one REGEX_OR more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
@@ -8,9 +8,9 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
+ * Unless required by applicable law REGEX_OR agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES REGEX_OR CONDITIONS OF ANY KIND, either express REGEX_OR implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -34,10 +34,12 @@ import org.apache.rocketmq.spring.starter.enums.SelectorType;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -45,6 +47,10 @@ import java.util.Objects;
 @Slf4j
 @ToString
 public class DefaultRocketMQListenerContainer implements InitializingBean, RocketMQListenerContainer {
+
+    private static final String CONSUMER_GROUP_PREFIX = "cg_";
+    private static final String REGEX_TAGS = "\\|\\|";
+    private static final String JOINER_TAGS = "||";
 
     @Setter
     @Getter
@@ -129,6 +135,7 @@ public class DefaultRocketMQListenerContainer implements InitializingBean, Rocke
         if (started) {
             log.info("container already started: {}", this);
         } else {
+            initConsumerGroup();
             initRocketMQPushConsumer();
             initMessageType();
 
@@ -138,6 +145,20 @@ public class DefaultRocketMQListenerContainer implements InitializingBean, Rocke
             log.debug("msgType: {}", messageType.getName());
             log.info("start container: {}", this);
         }
+    }
+
+    private void initConsumerGroup() {
+        Assert.notNull(topic, "Property 'topic' is required");
+        Assert.notNull(selectorExpress, "Property 'selectorExpress' is required");
+
+        if (!StringUtils.isEmpty(consumerGroup)) {
+            return;
+        }
+        String[] tags = selectorExpress.replaceAll(" ", "").split(REGEX_TAGS);
+        Arrays.sort(tags);
+
+        selectorExpress = String.join(JOINER_TAGS, tags);
+        consumerGroup = CONSUMER_GROUP_PREFIX + topic + "_" + selectorExpress;
     }
 
     public class DefaultMessageListenerConcurrently implements MessageListenerConcurrently {
@@ -212,7 +233,7 @@ public class DefaultRocketMQListenerContainer implements InitializingBean, Rocke
     }
 
     private void initMessageType() {
-        messageType =  Object.class;
+        messageType = Object.class;
         Type[] interfaces = AopUtils.getTargetClass(rocketMQListener).getGenericInterfaces();
         if (interfaces == null) {
             return;
@@ -236,7 +257,6 @@ public class DefaultRocketMQListenerContainer implements InitializingBean, Rocke
         Assert.notNull(rocketMQListener, "Property 'rocketMQListener' is required");
         Assert.notNull(consumerGroup, "Property 'consumerGroup' is required");
         Assert.notNull(nameServer, "Property 'nameServer' is required");
-        Assert.notNull(topic, "Property 'topic' is required");
 
         consumer = new DefaultMQPushConsumer(consumerGroup);
         consumer.setNamesrvAddr(nameServer);
