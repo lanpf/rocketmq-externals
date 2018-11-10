@@ -43,9 +43,8 @@
     </licenses>
 
     <properties>
-        <!--support springboot1 & 2-->
+        <!--support springboot 1 & 2-->
         <spring.boot.version>2.0.5.RELEASE</spring.boot.version>
-        <!--<spring.boot.version>1.5.9.RELEASE</spring.boot.version>-->
         <rocketmq-version>4.3.1</rocketmq-version> <!-- lowest version transaction message works -->
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
