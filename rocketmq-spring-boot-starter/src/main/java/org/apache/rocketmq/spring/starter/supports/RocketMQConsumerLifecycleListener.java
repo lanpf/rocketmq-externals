@@ -1,5 +1,3 @@
-package org.apache.rocketmq.spring.starter.constant;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,16 +15,11 @@ package org.apache.rocketmq.spring.starter.constant;
  * limitations under the License.
  */
 
+package org.apache.rocketmq.spring.starter.supports;
 
-public class RocketMQTransactionConst {
-    /**
-     * The bean name of the internally managed RocketMQ transaction annotation processor.
-     */
-    public static final String ROCKETMQ_TRANSACTION_ANNOTATION_PROCESSOR_BEAN_NAME =
-            "org.springframework.rocketmq.spring.starter.internalRocketMQTransactionAnnotationProcessor";
-
-    public static final String ROCKETMQ_TRANSACTION_GROUP =
-            "rocketmq_transaction_group";
-
-    public static final String ROCKETMQ_TRANSACTION_POOL_NAME_FORMAT = "rocketmq-transaction-pool-%d";
+/**
+ * @author lanpengfei
+ */
+public interface RocketMQConsumerLifecycleListener<T> {
+    void prepareStart(final T consumer);
 }

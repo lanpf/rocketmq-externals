@@ -18,21 +18,28 @@
 package org.apache.rocketmq.spring.starter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.spring.starter.annotation.RocketMQMessageListener;
-import org.apache.rocketmq.spring.starter.core.DefaultRocketMQListenerContainer;
+import org.apache.rocketmq.spring.starter.annotation.RocketMQTransactionListener;
 import org.apache.rocketmq.spring.starter.core.RocketMQListener;
+import org.apache.rocketmq.spring.starter.core.RocketMQLocalTransactionListener;
+import org.apache.rocketmq.spring.starter.core.RocketMQLocalTransactionState;
 import org.apache.rocketmq.spring.starter.core.RocketMQTemplate;
 import org.apache.rocketmq.spring.starter.enums.ConsumeMode;
 import org.apache.rocketmq.spring.starter.enums.SelectorType;
-import org.apache.rocketmq.client.producer.DefaultMQProducer;
-import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
+import org.apache.rocketmq.spring.starter.supports.DefaultRocketMQListenerContainer;
 import org.junit.After;
 import org.junit.Test;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.boot.test.util.EnvironmentTestUtils;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessagingException;
+import org.springframework.messaging.support.GenericMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 public class RocketMQAutoConfigurationTests {
 
@@ -45,14 +52,14 @@ public class RocketMQAutoConfigurationTests {
     @Test
     public void rocketMQTemplate() {
 
-        load("spring.rocketmq.nameServer=127.0.0.1:9876",
-            "spring.rocketmq.producer.group=my_group",
-            "spring.rocketmq.producer.send-msg-timeout=30000",
-            "spring.rocketmq.producer.retry-times-when-send-async-failed=1",
-            "spring.rocketmq.producer.compress-msg-body-over-howmuch=1024",
-            "spring.rocketmq.producer.max-message-size=10240",
-            "spring.rocketmq.producer.retry-another-broker-when-not-store-ok=true",
-            "spring.rocketmq.producer.retry-times-when-send-failed=1");
+        load("spring.rocketmq.name-server=127.0.0.1:9876",
+                "spring.rocketmq.producer.group=my_group",
+                "spring.rocketmq.producer.send-msg-timeout=30000",
+                "spring.rocketmq.producer.retry-times-when-send-async-failed=1",
+                "spring.rocketmq.producer.compress-msg-body-over-howmuch=1024",
+                "spring.rocketmq.producer.max-message-size=10240",
+                "spring.rocketmq.producer.retry-another-broker-when-not-store-ok=true",
+                "spring.rocketmq.producer.retry-times-when-send-failed=1");
 
         assertThat(this.context.containsBean("rocketMQMessageObjectMapper")).isTrue();
         assertThat(this.context.containsBean("mqProducer")).isTrue();
@@ -73,6 +80,29 @@ public class RocketMQAutoConfigurationTests {
         assertThat(defaultMQProducer.getMaxMessageSize()).isEqualTo(10240);
         assertThat(defaultMQProducer.isRetryAnotherBrokerWhenNotStoreOK()).isTrue();
         assertThat(defaultMQProducer.getRetryTimesWhenSendFailed()).isEqualTo(1);
+
+        try {
+            // create txProducer
+            rocketMQTemplate.startTransactionMQProducer("test",
+                    new RocketMQLocalTransactionListener() {
+                        @Override
+                        public RocketMQLocalTransactionState executeLocalTransaction(Message msg, Object arg) {
+                            return RocketMQLocalTransactionState.UNKNOW;
+                        }
+
+                        @Override
+                        public RocketMQLocalTransactionState checkLocalTransaction(Message msg) {
+                            return RocketMQLocalTransactionState.COMMIT_MESSAGE;
+                        }
+                    }, null);
+
+            // send transactional message with the txProducer
+            // test sending as follows when the name-server and broker is started.
+            //rocketMQTemplate.sendMessageInTransaction("test", new Message(TEST_TOPIC, "Hello".getBytes()), null);
+        } catch (MessagingException e) {
+            e.printStackTrace(System.out);
+            fail("failed to create txProducer and send transactional msg!");
+        }
     }
 
     @Test
@@ -82,7 +112,7 @@ public class RocketMQAutoConfigurationTests {
         assertThat(this.context.containsBean("rocketMQTemplate")).isFalse();
         closeContext();
 
-        load("spring.rocketmq.nameServer=127.0.0.1:9876");
+        load("spring.rocketmq.name-server=127.0.0.1:9876");
         assertThat(this.context.containsBean("mqProducer")).isFalse();
         assertThat(this.context.containsBean("rocketMQTemplate")).isFalse();
         closeContext();
@@ -92,7 +122,7 @@ public class RocketMQAutoConfigurationTests {
         assertThat(this.context.containsBean("rocketMQTemplate")).isFalse();
         closeContext();
 
-        load("spring.rocketmq.nameServer=127.0.0.1:9876", "spring.rocketmq.producer.group=my_group");
+        load("spring.rocketmq.name-server=127.0.0.1:9876", "spring.rocketmq.producer.group=my_group");
         assertThat(this.context.containsBean("mqProducer")).isTrue();
         assertThat(this.context.containsBean("rocketMQTemplate")).isEqualTo(true);
         assertThat(this.context.getBeansOfType(DefaultRocketMQListenerContainer.class)).isEmpty();
@@ -104,20 +134,20 @@ public class RocketMQAutoConfigurationTests {
         assertThat(this.context.getBeansOfType(DefaultRocketMQListenerContainer.class)).isEmpty();
         closeContext();
 
-        load("spring.rocketmq.nameServer=127.0.0.1:9876");
+        load("spring.rocketmq.name-server=127.0.0.1:9876");
         assertThat(this.context.getBeansOfType(DefaultRocketMQListenerContainer.class)).isEmpty();
         closeContext();
 
         load(false);
         this.context.registerBeanDefinition("myListener",
-            BeanDefinitionBuilder.rootBeanDefinition(MyListener.class).getBeanDefinition());
+                BeanDefinitionBuilder.rootBeanDefinition(MyListener.class).getBeanDefinition());
         this.context.refresh();
         assertThat(this.context.getBeansOfType(DefaultRocketMQListenerContainer.class)).isEmpty();
         closeContext();
 
-        load(false, "spring.rocketmq.nameServer=127.0.0.1:9876");
+        load(false, "spring.rocketmq.name-server=127.0.0.1:9876");
         this.context.registerBeanDefinition("myListener",
-            BeanDefinitionBuilder.rootBeanDefinition(MyListener.class).getBeanDefinition());
+                BeanDefinitionBuilder.rootBeanDefinition(MyListener.class).getBeanDefinition());
         this.context.refresh();
         assertThat(this.context.getBeansOfType(DefaultRocketMQListenerContainer.class)).isNotEmpty();
         assertThat(this.context.containsBean(DefaultRocketMQListenerContainer.class.getName() + "_1")).isTrue();
@@ -128,7 +158,7 @@ public class RocketMQAutoConfigurationTests {
 
     @Test
     public void listenerContainer() {
-        load(false, "spring.rocketmq.nameServer=127.0.0.1:9876");
+        load(false, "spring.rocketmq.name-server=127.0.0.1:9876");
         BeanDefinitionBuilder beanBuilder = BeanDefinitionBuilder.rootBeanDefinition(MyListener.class);
         this.context.registerBeanDefinition("myListener", beanBuilder.getBeanDefinition());
         this.context.refresh();
@@ -137,8 +167,8 @@ public class RocketMQAutoConfigurationTests {
         assertThat(this.context.containsBean(DefaultRocketMQListenerContainer.class.getName() + "_1")).isTrue();
 
         DefaultRocketMQListenerContainer listenerContainer =
-            this.context.getBean(DefaultRocketMQListenerContainer.class.getName() + "_1",
-                DefaultRocketMQListenerContainer.class);
+                this.context.getBean(DefaultRocketMQListenerContainer.class.getName() + "_1",
+                        DefaultRocketMQListenerContainer.class);
         ObjectMapper objectMapper = this.context.getBean("rocketMQMessageObjectMapper", ObjectMapper.class);
         assertThat(listenerContainer.getObjectMapper()).isEqualTo(objectMapper);
         assertThat(listenerContainer.getConsumeMode()).isEqualTo(ConsumeMode.CONCURRENTLY);
@@ -164,6 +194,50 @@ public class RocketMQAutoConfigurationTests {
         @Override
         public void onMessage(String message) {
             System.out.println(message);
+        }
+    }
+
+
+    //@Test
+    //run the case when name-server and broker is started !!
+    public void enableTxProducer() {
+        load(false, "spring.rocketmq.name-server=127.0.0.1:9876",
+                "spring.rocketmq.producer.group=my_group",
+                "spring.rocketmq.producer.send-msg-timeout=30000",
+                "spring.rocketmq.producer.retry-times-when-send-async-failed=1",
+                "spring.rocketmq.producer.compress-msg-body-over-howmuch=1024",
+                "spring.rocketmq.producer.max-message-size=10240",
+                "spring.rocketmq.producer.retry-another-broker-when-not-store-ok=true",
+                "spring.rocketmq.producer.retry-times-when-send-failed=1");
+
+
+        BeanDefinitionBuilder beanBuilder = BeanDefinitionBuilder.rootBeanDefinition(TransactionListenerImpl.class);
+        this.context.registerBeanDefinition("myListener1", beanBuilder.getBeanDefinition());
+        this.context.refresh();
+        assertThat(this.context.containsBean("rocketMQTemplate")).isTrue();
+        assertThat(this.context.getBeansOfType(TransactionListenerImpl.class)).isNotEmpty();
+
+        RocketMQTemplate rocketMQTemplate = this.context.getBean(RocketMQTemplate.class);
+        try {
+            Message message = new GenericMessage("Hello");
+            rocketMQTemplate.sendMessageInTransaction(null, TEST_TOPIC, message, null);
+            rocketMQTemplate.shutdownTransactionMQProducer(null);
+        } catch (MessagingException e) {
+            e.printStackTrace(System.out);
+            fail("failed to get TransactionListenerImpl and send transactional msg!");
+        }
+    }
+
+    @RocketMQTransactionListener
+    private static class TransactionListenerImpl implements RocketMQLocalTransactionListener {
+        @Override
+        public RocketMQLocalTransactionState executeLocalTransaction(Message msg, Object arg) {
+            return RocketMQLocalTransactionState.UNKNOW;
+        }
+
+        @Override
+        public RocketMQLocalTransactionState checkLocalTransaction(Message msg) {
+            return RocketMQLocalTransactionState.COMMIT_MESSAGE;
         }
     }
 

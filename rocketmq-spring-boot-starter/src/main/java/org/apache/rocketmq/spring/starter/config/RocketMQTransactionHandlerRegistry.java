@@ -1,4 +1,4 @@
-package org.apache.rocketmq.spring.starter.transaction;
+package org.apache.rocketmq.spring.starter.config;
 
 import io.netty.util.internal.ConcurrentSet;
 import org.apache.rocketmq.client.exception.MQClientException;
@@ -11,11 +11,11 @@ public class RocketMQTransactionHandlerRegistry implements DisposableBean {
 
     private RocketMQTemplate rocketMQTemplate;
 
-    public RocketMQTransactionHandlerRegistry(RocketMQTemplate transactionRocketMQTemplate) {
-        this.rocketMQTemplate = transactionRocketMQTemplate;
-    }
-
     private final Set<String> listenerContainer = new ConcurrentSet<>();
+
+    public RocketMQTransactionHandlerRegistry(RocketMQTemplate rocketMQTemplate) {
+        this.rocketMQTemplate = rocketMQTemplate;
+    }
 
     @Override
     public void destroy() throws Exception {
@@ -23,11 +23,11 @@ public class RocketMQTransactionHandlerRegistry implements DisposableBean {
     }
 
     public void register(RocketMQTransactionHandler handler) throws MQClientException {
-        if (listenerContainer.contains(handler.getProducerGroup())) {
-            throw new MQClientException(String.format("The transaction name [%s] has been defined in TransactionListener", handler.getProducerGroup()), null);
+        if (listenerContainer.contains(handler.getName())) {
+            throw new MQClientException(String.format("The transaction name [%s] has been defined in TransactionListener [%s]", handler.getName(), handler.getBeanName()), null);
         }
-        listenerContainer.add(handler.getProducerGroup());
+        listenerContainer.add(handler.getName());
 
-        rocketMQTemplate.startTransactionMQProducer(handler.getProducerGroup(), handler.getTransactionListener(), handler.getCheckExecutor());
+        rocketMQTemplate.startTransactionMQProducer(handler.getName(), handler.getTransactionListener(), handler.getCheckExecutor());
     }
 }

@@ -17,7 +17,7 @@
 
 package org.apache.rocketmq.spring.starter.annotation;
 
-import org.apache.rocketmq.spring.starter.constant.RocketMQTransactionConst;
+import org.apache.rocketmq.spring.starter.supports.RocketMQTransactionConstants;
 import org.springframework.stereotype.Component;
 
 import java.lang.annotation.*;
@@ -43,7 +43,7 @@ public @interface RocketMQTransactionListener {
      *
      * <p>It is suggested to use the default transactionProducerGroup if your system only needs to define a TransactionListener class.
      */
-    String txProducerGroup() default RocketMQTransactionConst.ROCKETMQ_TRANSACTION_GROUP;
+    String txProducerGroup() default RocketMQTransactionConstants.ROCKETMQ_TRANSACTION_GROUP;
 
     /**
      * See ThreadPoolExecutor corePoolSize
@@ -73,5 +73,5 @@ public @interface RocketMQTransactionListener {
     /**
      * See ThreadPoolExecutor namedFactory
      */
-    String poolNameFormat() default RocketMQTransactionConst.ROCKETMQ_TRANSACTION_POOL_NAME_FORMAT;
+    String poolNameFormat() default RocketMQTransactionConstants.ROCKETMQ_TRANSACTION_POOL_NAME_FORMAT;
 }

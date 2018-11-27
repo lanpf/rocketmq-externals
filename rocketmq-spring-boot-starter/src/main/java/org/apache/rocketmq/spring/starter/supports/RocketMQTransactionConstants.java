@@ -1,3 +1,5 @@
+package org.apache.rocketmq.spring.starter.supports;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,15 +17,16 @@
  * limitations under the License.
  */
 
-package org.apache.rocketmq.spring.starter.core;
 
-import org.springframework.beans.factory.DisposableBean;
-
-public interface RocketMQListenerContainer extends DisposableBean {
-
+public class RocketMQTransactionConstants {
     /**
-     * Set the message listener to use. Throws an {@link IllegalArgumentException} if that message listener type is
-     * not supported.
+     * The bean name of the internally managed RocketMQ transaction annotation processor.
      */
-    void setRocketMQListener(RocketMQListener<?> rocketMQListener);
+    public static final String ROCKETMQ_TRANSACTION_ANNOTATION_PROCESSOR_BEAN_NAME =
+            "org.springframework.rocketmq.spring.starter.internalRocketMQTransactionAnnotationProcessor";
+
+    public static final String ROCKETMQ_TRANSACTION_GROUP =
+            "rocketmq_transaction_group";
+
+    public static final String ROCKETMQ_TRANSACTION_POOL_NAME_FORMAT = "rocketmq-transaction-pool-%d";
 }

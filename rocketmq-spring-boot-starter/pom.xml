@@ -22,7 +22,7 @@
 
     <groupId>org.apache.rocketmq</groupId>
     <artifactId>spring-boot-starter-rocketmq</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
 
     <name>Spring Boot Rocket Starter</name>
     <description>Starter for messaging using Apache RocketMQ</description>
@@ -44,8 +44,8 @@
 
     <properties>
         <!--support springboot 1 & 2-->
-        <spring.boot.version>2.0.5.RELEASE</spring.boot.version>
-        <rocketmq-version>4.3.1</rocketmq-version> <!-- lowest version transaction message works -->
+        <spring.boot.version>2.0.6.RELEASE</spring.boot.version>
+        <rocketmq-version>4.3.2</rocketmq-version> <!-- lowest version transaction message works is 4.3.1-->
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

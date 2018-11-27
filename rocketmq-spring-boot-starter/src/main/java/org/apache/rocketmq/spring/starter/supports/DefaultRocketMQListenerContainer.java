@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.rocketmq.spring.starter.core;
+package org.apache.rocketmq.spring.starter.supports;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
@@ -29,6 +29,8 @@ import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
+import org.apache.rocketmq.spring.starter.core.RocketMQListener;
+import org.apache.rocketmq.spring.starter.core.RocketMQPushConsumerLifecycleListener;
 import org.apache.rocketmq.spring.starter.enums.ConsumeMode;
 import org.apache.rocketmq.spring.starter.enums.SelectorType;
 import org.springframework.aop.support.AopUtils;
@@ -48,7 +50,7 @@ import java.util.Objects;
 @ToString
 public class DefaultRocketMQListenerContainer implements InitializingBean, RocketMQListenerContainer {
 
-    private static final String CONSUMER_GROUP_PREFIX = "cg_";
+    private static final String CONSUMER_GROUP_PREFIX = "cg";
     private static final String REGEX_TAGS = "\\|\\|";
     private static final String JOINER_TAGS = "||";
 
@@ -158,7 +160,7 @@ public class DefaultRocketMQListenerContainer implements InitializingBean, Rocke
         Arrays.sort(tags);
 
         selectorExpress = String.join(JOINER_TAGS, tags);
-        consumerGroup = CONSUMER_GROUP_PREFIX + topic + "_" + selectorExpress;
+        consumerGroup = CONSUMER_GROUP_PREFIX + "_" + topic + "_" + selectorExpress;
     }
 
     public class DefaultMessageListenerConcurrently implements MessageListenerConcurrently {
@@ -289,6 +291,10 @@ public class DefaultRocketMQListenerContainer implements InitializingBean, Rocke
                 throw new IllegalArgumentException("Property 'consumeMode' was wrong.");
         }
 
+        // provide an entryway to custom setting RocketMQ consumer
+        if (rocketMQListener instanceof RocketMQPushConsumerLifecycleListener) {
+            ((RocketMQPushConsumerLifecycleListener) rocketMQListener).prepareStart(consumer);
+        }
     }
 
 }

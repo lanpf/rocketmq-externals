@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.rocketmq.spring.starter.constant;
+package org.apache.rocketmq.spring.starter.supports;
 
 /**
  * Constants Created by aqlu on 2017/11/16.
  */
-public final class RocketMQListenerContainerConst {
+public final class DefaultRocketMQListenerContainerConstants {
     public static final String PROP_NAMESERVER = "nameServer";
     public static final String PROP_TOPIC = "topic";
     public static final String PROP_CONSUMER_GROUP = "consumerGroup";

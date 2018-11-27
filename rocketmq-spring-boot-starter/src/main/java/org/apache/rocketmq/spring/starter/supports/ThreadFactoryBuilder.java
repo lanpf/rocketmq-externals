@@ -1,4 +1,4 @@
-package org.apache.rocketmq.spring.starter.util;
+package org.apache.rocketmq.spring.starter.supports;
 
 import java.util.Locale;
 import java.util.concurrent.Executors;
